@@ -5,6 +5,7 @@ description = ""
 authors = ["Your Name <you@example.com>"]
 license = "MIT"
 readme = "README.md"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.9"
@@ -15,6 +16,9 @@ six = "^1.16.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.12.1"
+
+[tool.poetry.requires-plugins]
+poetry-plugin-export = ">=1.8"
 
 [build-system]
 requires = ["poetry-core"]

@@ -7,8 +7,7 @@ import sys
 import googleapiclient.discovery
 import googleapiclient.errors
 import googleapiclient.http
-import httplib2
-import oauth2client.client
+from google_auth_oauthlib.flow import InstalledAppFlow
 import six
 
 OAUTH2_SCOPE = "https://www.googleapis.com/auth/drive"
@@ -16,29 +15,11 @@ CLIENT_SECRETS = "client_secrets.json"
 CLIENT_CREDENTIALS = "cred.json"
 
 
-def get_credentials() -> oauth2client.client.Credentials:
-    if os.path.exists(CLIENT_CREDENTIALS):
-        try:
-            with open(CLIENT_CREDENTIALS, "r") as f:
-                return oauth2client.client.Credentials.new_from_json(f.read())
-        except Exception as e:
-            print("Cannot reuse credentials due to error: {}".format(e))
-    flow = oauth2client.client.flow_from_clientsecrets(CLIENT_SECRETS, OAUTH2_SCOPE)
-    flow.redirect_uri = oauth2client.client.OOB_CALLBACK_URN
-    authorize_url = flow.step1_get_authorize_url()
-    print("Use this link for authorization: {}".format(authorize_url))
-    code = six.moves.input("Verification code: ").strip()
-    credentials: oauth2client.client.Credentials = flow.step2_exchange(code)
-    with open(CLIENT_CREDENTIALS, "w") as f:
-        f.write(credentials.to_json())
-    return credentials
-
-
 def get_drive_service():
-    credentials = get_credentials()
-    http = httplib2.Http()
-    credentials.authorize(http)
-    drive_service = googleapiclient.discovery.build("drive", "v2", http=http)
+    flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS, scopes=[OAUTH2_SCOPE])
+    credentials = flow.run_local_server()
+
+    drive_service = googleapiclient.discovery.build('drive', 'v2', credentials=credentials)
     return drive_service
 
 

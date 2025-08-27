@@ -1,3 +1,38 @@
+# Fork Notes
+
+This fork incorporates a couple of fixes:
+- The ["Consent is required to transfer ownership of a file to another user." error](https://github.com/davidstrauss/google-drive-recursive-ownership/issues/44), fixed by @svaponi in his fork (which this is based on).
+- The ["Error 400: invalid_request", "The out-of-band (OOB) flow has been blocked in order to keep users secure." error](https://github.com/davidstrauss/google-drive-recursive-ownership/issues/42), fixed by @wildintellect in [his fork](https://github.com/wildintellect/google-drive-recursive-ownership/tree/fix/oob). This change has been pulled in.
+
+Still, you may encounter the following error after confirming in your browser:
+
+```
+Traceback (most recent call last):
+  File "/home/koopa/code/python/google-drive-recursive-ownership/transfer.py", line 197, in <module>
+    main()
+    ~~~~^^
+  File "/home/koopa/code/python/google-drive-recursive-ownership/transfer.py", line 181, in main
+    service = get_drive_service()
+  File "/home/koopa/code/python/google-drive-recursive-ownership/transfer.py", line 20, in get_drive_service
+    credentials = flow.run_local_server()
+  File "/home/koopa/code/python/google-drive-recursive-ownership/.venv/lib/python3.13/site-packages/google_auth_oauthlib/flow.py", line 464, in run_local_server
+    authorization_response = wsgi_app.last_request_uri.replace("http", "https")
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'replace'
+```
+
+This appears to be a [race condition within google_auth_oauthlib](https://github.com/googleapis/google-auth-library-python-oauthlib/issues/69). I worked around this with a pretty silly change to [`.venv/lib/python3.13/site-packages/google_auth_oauthlib/flow.py`](https://github.com/googleapis/google-auth-library-python-oauthlib/blob/4b1a5f33f282af79999d7ed80d11a246a7e301a2/google_auth_oauthlib/flow.py#L453C13-L453C42) (yes, you should use a virtualenv!):
+
+```diff
+-            local_server.handle_request()
++            try:
++                local_server.serve_forever()
++            except KeyboardInterrupt:
++                pass
+```
+
+With this applied, once you go through the flow in your browser, you can tab back to your terminal and issue an interrupt with Ctrl+C. This gives enough time for the callback to run.
+
 # Google Drive Recursive Ownership Tool
 
 ### Supported Files
